@@ -1,3 +1,4 @@
+import { itemList } from './itemData.js';
 class playerDataClass{
     // playerDataArray
     // [
@@ -91,24 +92,36 @@ class playerDataClass{
     }
 
     playerBackpack(method,item,amount){
-        let mark = false, timely = 0;
+        let mark = false, timely = 0, weight = 0;
         let isOwn = Reflect.has(item);
+        if(amount === undefined) amount = 1;
         switch(method){
             case 'set':
                 if(isOwn)
                     timely = Reflect.get(this.playerDataArray[1][0],item);
                 var num = timely + amount;
                 Reflect.set(this.playerDataArray[1][0],item,num);
+
+                let msg = Reflect.get(itemList,item);
+                weight = msg.weight * amount;
+                this.playerDataArray[1][1] += weight;
                 mark = true;
                 break;
             case 'use':
                 if(isOwn){
                     timely = Reflect.get(this.playerDataArray[1][0],item);
-                    mark = timely < amount? false: true;                    
+                    mark = timely < amount? false: true;
+                    
+                    if(mark){
+                        let msg = Reflect.get(itemList,item);
+                        weight = msg.weight * amount;
+                        this.playerDataArray[1][1] -= weight;
+                    }                    
                 }
-
-                
                 break;
         }
+        return mark;
     }
 }
+
+export var newplayer = new playerDataClass();
