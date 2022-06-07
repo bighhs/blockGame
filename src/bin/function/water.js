@@ -20,11 +20,22 @@ export function mapWaterHelper(x,y){
         let pointsArray = new Array();
         let randomNumX = perm[(X*2+Y) & 511] / 255;
         let randomNumY = perm[(Y*2+X) & 511] / 255;
+
+        // [(2*x-1)^3+1]/2   make it a bigger possibility to create a beginPoint at the middle of the map
         let midX = ((2*randomNumX - 1)*(2*randomNumX - 1)*(2*randomNumX - 1) + 1)/2;
         let midY = ((2*randomNumY - 1)*(2*randomNumY - 1)*(2*randomNumY - 1) + 1)/2;
         let xI = Math.floor((blockSize-1) * midX);
         let yI = Math.floor((blockSize-1) * midY);
         pointsArray.push([ xI, yI]);
+
+        // [sin(PI*x)+1]/2   make it a bigger possibility to create a beginPoint at the edge of the map
+        let borderX = (Math.sin(Math.PI * randomNumX) + 1)/2;
+        let borderY = (Math.sin(Math.PI * randomNumY) + 1)/2;
+        let xII = Math.floor((blockSize-1) * borderX);
+        let yII = Math.floor((blockSize-1) * borderY);
+        pointsArray.push([ xII, yII]);
+
+        // if more water flowing beginPoint, create here
         return pointsArray;
     }
 
@@ -44,7 +55,10 @@ export function mapWaterHelper(x,y){
         }
 
         let beginPoints = getBeginPoints();
-        flowLoop(beginPoints[0],map,waterMap);
+
+        for(let i=0;i<beginPoints.length;i++){
+            flowLoop(beginPoints[i],map,waterMap);            
+        }
         return {waterMap,map};
     }
 
