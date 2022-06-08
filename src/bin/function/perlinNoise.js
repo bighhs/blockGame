@@ -1,4 +1,4 @@
-// 2d perlin noise
+// 2d perlin noise get from echart example
 export function getNoiseHelper() {
     class Grad {
       constructor(x, y, z) {

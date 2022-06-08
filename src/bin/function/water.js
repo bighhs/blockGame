@@ -57,14 +57,17 @@ export function mapWaterHelper(x,y){
         let beginPoints = getBeginPoints();
 
         for(let i=0;i<beginPoints.length;i++){
-            flowLoop(beginPoints[i],map,waterMap);            
+            let location = beginPoints[i][0] + beginPoints[i][1] * blockSize;
+            flowLoop(beginPoints[i],map,waterMap);
+            if(map[location] < 0.75){
+                growLoop(beginPoints[i],map,waterMap);
+            }            
         }
         return {waterMap,map};
     }
 
     // help water flowing from height to low
     function flowLoop(beginPoint,heightMap,waterMap){
-
         let lowArray = new Array(),
             location = beginPoint[1]*blockSize + beginPoint[0];
         waterMap[location] = 1;
@@ -72,13 +75,13 @@ export function mapWaterHelper(x,y){
         if(beginPoint[1]!==0 && heightMap[location]>=heightMap[location - blockSize]){
             lowArray.push([beginPoint[0],beginPoint[1]-1]);
         }
-        if(beginPoint[1]!==149 && heightMap[location]>=heightMap[location + blockSize]){
+        if(beginPoint[1]!==(blockSize-1) && heightMap[location]>=heightMap[location + blockSize]){
             lowArray.push([beginPoint[0],beginPoint[1]+1]);
         }
         if(beginPoint[0]!==0 && heightMap[location]>=heightMap[location - 1]){
             lowArray.push([beginPoint[0]-1,beginPoint[1]]);
         }
-        if(beginPoint[0]!==149 && heightMap[location]>=heightMap[location + 1]){
+        if(beginPoint[0]!==(blockSize-1) && heightMap[location]>=heightMap[location + 1]){
             lowArray.push([beginPoint[0]+1,beginPoint[1]]);
         }
         if(lowArray.length !== 0){
@@ -87,7 +90,32 @@ export function mapWaterHelper(x,y){
         }else{
             return;
         }return;
+    }
 
+    // grow utill height 
+    function growLoop(beginPoint,heightMap,waterMap){
+        let highArray = new Array(),
+            location = beginPoint[1]*blockSize + beginPoint[0];
+        waterMap[location] = 1;
+
+        if(beginPoint[1]!==0 && heightMap[location - blockSize]<=0.73 &&heightMap[location]<=heightMap[location - blockSize]){
+            highArray.push([beginPoint[0],beginPoint[1]-1]);
+        }
+        if(beginPoint[1]!==(blockSize-1) && heightMap[location + blockSize]<=0.73 &&heightMap[location]<=heightMap[location + blockSize]){
+            highArray.push([beginPoint[0],beginPoint[1]+1]);
+        }
+        if(beginPoint[0]!==0 && heightMap[location - 1]<=0.73 &&heightMap[location]<=heightMap[location - 1]){
+            highArray.push([beginPoint[0]-1,beginPoint[1]]);
+        }
+        if(beginPoint[0]!==(blockSize-1) && heightMap[location + 1]<=0.73 &&heightMap[location]<=heightMap[location + 1]){
+            highArray.push([beginPoint[0]+1,beginPoint[1]]);
+        }
+        if(highArray.length !== 0){
+            let flowPoint = highArray[perm[location & 511] % highArray.length];
+            growLoop(flowPoint,heightMap,waterMap);            
+        }else{
+            return ;
+        }return ;
     }
 
     return {

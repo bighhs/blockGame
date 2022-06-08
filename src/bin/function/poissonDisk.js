@@ -1,9 +1,22 @@
+/***********************************************************************
+       poissonDisk function that make random point with a seed
+       固定的种子在固定的加载区块（函数中为blockSize计算的区块位置）生成固定的泊松采样点，
+       使得有规律的生成随机点
+
+usage: let poisson = poissonDiskHandler(nowLocation);
+       let grad = await seed(randomSeed);  seed between 0-1
+       let pointArray = poisson.gradExchange(grad);
+
+       author: chen_JunYang
+************************************************************************/
 export function poissonDiskHandler(x,y){
+
+    const blockSize = 150;
 
     let X = Math.floor(x / blockSize);
     let Y = Math.floor(y / blockSize);
     let perm = new Array(512);
-    let mapSize = 150;
+    let mapSize = blockSize;
     let minSize = 20;
 
     class grad2D{
@@ -19,7 +32,7 @@ export function poissonDiskHandler(x,y){
             this.getHandleTime = 0;
             for(let i=0;i<this.gradNum;i++){
                 this.grad[i] = new Array(this.gradNum);
-                this.grad[i].fill(0);
+                this.grad[i].fill(undefined);
             }
             this.tryTime = 30;
         }
@@ -27,13 +40,14 @@ export function poissonDiskHandler(x,y){
             let x=point[0], y=point[1];
             let xIndex = Math.floor(x/this.size);
             let yIndex = Math.floor(y/this.size);
-            if(this.grad[yIndex][xIndex] !== undefined){
-                return false;
+            if(this.grad[yIndex][xIndex] === undefined){
+                this.grad[yIndex][xIndex] = [x,y];
+                return true;
             }
-            this.grad[yIndex][xIndex] = [x,y];
+            return false;
         }
         getPoint(xIndex,yIndex){
-            if(this.grad[yIndex][xIndex] !== undefined){
+            if(this.grad[yIndex][xIndex] === undefined){
                 return false;
             }
             return this.grad[yIndex][xIndex];
@@ -57,21 +71,24 @@ export function poissonDiskHandler(x,y){
             let xIndex = Math.floor(point[0]/this.size);
             let yIndex = Math.floor(point[1]/this.size);
             function checkPoint(point1,xCheck,yCheck){
-                if(xCheck<0||xCheck>this.gradNum-1||yCheck<0||yCheck>this.gradNum-1){
+                if(xCheck<0||xCheck>grad.gradNum-1||yCheck<0||yCheck>grad.gradNum-1){
                     return true;
                 }
-                let point2 = getPoint(xCheck,yCheck);
+                let point2 = grad.getPoint(xCheck,yCheck);
                 if(point2 === false){
                     return true;
                 } 
                 let dX = Math.abs(point1[0] - point2[0]);
                 let dY = Math.abs(point1[1] - point2[1]);
                 let distance = Math.sqrt(dX*dX + dY*dY);
-                if(distance > this.min){
+                if(distance > grad.min){
                     return true;
                 }else{
                     return false;
                 }
+            }
+            if(this.getPoint(xIndex,yIndex)){
+                return false;
             }
             // check nearby 20 block
             if(checkPoint(point,xIndex-1,yIndex-2)&&checkPoint(point,xIndex,yIndex-2)&&checkPoint(point,xIndex+1,yIndex-2)){
@@ -86,9 +103,10 @@ export function poissonDiskHandler(x,y){
 
     async function seed(seed){
         let getNoiseHelper = await import('./perlinNoise.js').then(({ getNoiseHelper }) => {return getNoiseHelper});
-        noise = getNoiseHelper();
+        let noise = getNoiseHelper();
         noise.seed(seed);
         perm = noise.perm;
+        return poissonDisk();
     }
 
     let grad = new grad2D(minSize,mapSize,X,Y);
@@ -96,7 +114,6 @@ export function poissonDiskHandler(x,y){
     function getFirstPoint(){
         let randomX = perm[(grad.X*2 + grad.Y) & 511] / 255;
         let randomY = perm[(grad.Y*2 + grad.X) & 511] / 255;
-
         let xI = mapSize * randomX;
         let yI = mapSize * randomY;
         return [ xI, yI];
@@ -116,12 +133,51 @@ export function poissonDiskHandler(x,y){
         let firstPoint = getFirstPoint();
         grad.setPoint(firstPoint);
         grad.setHandle(firstPoint);
-
-        
+        do{
+            let handleInstance = grad.getHandle(perm);
+            let handleIndex = handleInstance.index;
+            let handlePoint = handleInstance.point;
+            let handleHash = handlePoint[0] + handlePoint[1] + handleIndex;
+            let time;
+            for(time=0;time<grad.tryTime;time++){
+                let hash = perm[(handleHash + time*time) & 511] / 255;
+                let randomPoint = getRandomPoint(hash,handlePoint);
+                if(randomPoint === false){
+                    continue;
+                }
+                if(grad.isGood(randomPoint)){
+                    grad.setPoint(randomPoint);
+                    grad.setHandle(randomPoint);
+                    break;
+                }   
+            }
+            if(time === grad.tryTime){
+                grad.removeHandle(handleIndex);
+            }
+        }while(grad.handleArray.length !== 0);
+        return grad;
+    }
+    // the blockSize of grad must bigger than the basic size 
+    function gradExchange(grad){
+        let size = 150;
+        let res = new Array(size*size);
+        res.fill(0);
+        for(let i=0;i<grad.gradNum;i++){
+            for(let j=0;j<grad.gradNum;j++){
+                let point = grad.getPoint(j,i);
+                if(point){
+                    let xI = Math.round(point[0]);
+                    let yI = Math.round(point[1]);
+                    res[xI + size*yI] = 1;
+                }
+            }
+        }
+        return res;
     }
 
     return {
         seed,
-        poissonDisk
+        poissonDisk,
+        gradExchange,
     }
 }

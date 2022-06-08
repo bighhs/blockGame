@@ -7,6 +7,8 @@
 </template>
 <script>
 import * as echarts from 'echarts'
+
+import { poissonDiskHandler } from '../bin/function/poissonDisk'
 export default {
     name: 'gamePage',
     data(){
@@ -19,8 +21,13 @@ export default {
     },
     async mounted(){
         let noise3 = await import('../bin/function/water.js').then(({ mapWaterHelper }) => {return mapWaterHelper});
-        let noise2 = noise3(16059,1537);
+        let noise2 = noise3(16059,1387);
         let datamain = await noise2.seed(0.66523);
+
+        let disk = poissonDiskHandler(16059,1387);
+        let grad = await disk.seed(0.66523);
+        let poissonArray = disk.gradExchange(grad);
+
         for (let i = 0; i < 150; i++) {
             for (let j = 0; j < 150; j++) {
                 // let x = (max - min) * i / 200 + min;
@@ -28,6 +35,7 @@ export default {
                 let position = j+i*150;
                 let num = datamain.map[position];
                 if(datamain.waterMap[position] === 1){ num = 0; }
+                if(poissonArray[position] === 1){ num = 1; }
                 // num = num>0.7?num:0.3;
                 this.noise.push([i, j, num]);
                 // data.push([i, j, normalDist(theta, x) * normalDist(theta, y)]);
