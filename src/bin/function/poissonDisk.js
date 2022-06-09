@@ -160,19 +160,21 @@ export function poissonDiskHandler(x,y){
     // the blockSize of grad must bigger than the basic size 
     function gradExchange(grad){
         let size = 150;
-        let res = new Array(size*size);
-        res.fill(0);
+        let test = new Array(size*size);
+        test.fill(0);
+        let res = new Array();
         for(let i=0;i<grad.gradNum;i++){
             for(let j=0;j<grad.gradNum;j++){
                 let point = grad.getPoint(j,i);
                 if(point){
+                    res.push(point);
                     let xI = Math.round(point[0]);
                     let yI = Math.round(point[1]);
-                    res[xI + size*yI] = 1;
+                    test[xI + size*yI] = 1;
                 }
             }
         }
-        return res;
+        return {res,test};
     }
 
     return {

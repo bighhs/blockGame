@@ -3,12 +3,16 @@
         <div class="gameWindow" ref="gameWindow"></div>
         <div class="gameBar"></div>
         <div class="msgWindow"></div>
+        <div class="checkMap">
+            <canvas ref="canvas" width="1024" height="1024"></canvas>
+        </div>
     </div>
 </template>
 <script>
 import * as echarts from 'echarts'
 
 import { poissonDiskHandler } from '../bin/function/poissonDisk'
+import { getDelaunayHelper } from '../bin/function/voronoi'
 export default {
     name: 'gamePage',
     data(){
@@ -27,7 +31,10 @@ export default {
         let disk = poissonDiskHandler(16059,1387);
         let grad = await disk.seed(0.66523);
         let poissonArray = disk.gradExchange(grad);
-
+        let delaunay = getDelaunayHelper();
+        let dMap = delaunay.triangulate(poissonArray.res)
+        /* eslint-disable*/
+        console.log(poissonArray.res);
         for (let i = 0; i < 150; i++) {
             for (let j = 0; j < 150; j++) {
                 // let x = (max - min) * i / 200 + min;
@@ -35,7 +42,7 @@ export default {
                 let position = j+i*150;
                 let num = datamain.map[position];
                 if(datamain.waterMap[position] === 1){ num = 0; }
-                if(poissonArray[position] === 1){ num = 1; }
+                if(poissonArray.test[position] === 1){ num = 1; }
                 // num = num>0.7?num:0.3;
                 this.noise.push([i, j, num]);
                 // data.push([i, j, normalDist(theta, x) * normalDist(theta, y)]);
@@ -46,6 +53,7 @@ export default {
             this.Xdata.push(j);
         }
         this.drawChart();
+        this.drawMap(poissonArray.res,dMap)
     },
     methods: {
         drawChart(){
@@ -102,6 +110,20 @@ export default {
             };
 
             option && myChart.setOption(option);
+        },
+        drawMap(vertices,triangles){
+            let canvasMap = this.$refs.canvas,
+                ctx = canvasMap.getContext("2d"),
+                i;
+
+            for(i = triangles.length; i; ) {
+                ctx.beginPath();
+                --i; ctx.moveTo(vertices[triangles[i]][0], vertices[triangles[i]][1]);
+                --i; ctx.lineTo(vertices[triangles[i]][0], vertices[triangles[i]][1]);
+                --i; ctx.lineTo(vertices[triangles[i]][0], vertices[triangles[i]][1]);
+                ctx.closePath();
+                ctx.stroke();
+            }
         }
     }
     // methods: {
@@ -126,6 +148,7 @@ export default {
     display: flex;
     position: relative;
     justify-content: space-around;
+    flex-wrap: wrap;
     .gameWindow{
         overflow: hidden;
         width: 80%;

@@ -59,7 +59,7 @@ export function mapWaterHelper(x,y){
         for(let i=0;i<beginPoints.length;i++){
             let location = beginPoints[i][0] + beginPoints[i][1] * blockSize;
             flowLoop(beginPoints[i],map,waterMap);
-            if(map[location] < 0.75){
+            if(map[location] < 0.7){
                 growLoop(beginPoints[i],map,waterMap);
             }            
         }
