@@ -32,9 +32,8 @@ export default {
         let grad = await disk.seed(0.66523);
         let poissonArray = disk.gradExchange(grad);
         let delaunay = getDelaunayHelper();
-        let dMap = delaunay.triangulate(poissonArray.res)
-        /* eslint-disable*/
-        console.log(poissonArray.res);
+        let dMap = delaunay.triangulate(poissonArray.res).open
+
         for (let i = 0; i < 150; i++) {
             for (let j = 0; j < 150; j++) {
                 // let x = (max - min) * i / 200 + min;
@@ -115,7 +114,6 @@ export default {
             let canvasMap = this.$refs.canvas,
                 ctx = canvasMap.getContext("2d"),
                 i;
-
             for(i = triangles.length; i; ) {
                 ctx.beginPath();
                 --i; ctx.moveTo(vertices[triangles[i]][0], vertices[triangles[i]][1]);

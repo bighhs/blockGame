@@ -1,9 +1,11 @@
-export function getVoronoiHelper(){
-    return{
+/***********************************
+      Delaunay三角网的高效构建
+      参考自https://github.com/darkskyapp/delaunay-fast
+      input: (vertices)   [[x,y],[x2,y2]...]
+      output: (array:open)  点点间连线，与vertices二维数组绑定的第三维度
 
-    }
-}
-
+      当点与点太过接近以至于小于容差值时会报错，有这种情况需要倍乘点坐标  
+ **********************************/
 export function getDelaunayHelper(){
     var Delaunay;
   var EPSILON = 1.0 / 1048576.0;
@@ -46,7 +48,6 @@ export function getDelaunayHelper(){
         fabsy2y3 = Math.abs(y2 - y3),
         xc, yc, m1, m2, mx1, mx2, my1, my2, dx, dy;
 
-    /* Check for coincident points */
     if(fabsy1y2 < EPSILON && fabsy2y3 < EPSILON)
       throw new Error("Eek! Coincident points!");
 
@@ -109,22 +110,15 @@ export function getDelaunayHelper(){
       var n = vertices.length,
           i, j, indices, st, open, closed, edges, dx, dy, a, b, c;
 
-      /* Bail if there aren't enough vertices to form any triangles. */
       if(n < 3)
         return [];
 
-      /* Slice out the actual vertices from the passed objects. (Duplicate the
-       * array even if we don't, though, since we need to make a supertriangle
-       * later on!) */
       vertices = vertices.slice(0);
 
       if(key)
         for(i = n; i--; )
           vertices[i] = vertices[i][key];
 
-      /* Make an array of indices into the vertex array, sorted by the
-       * vertices' x-position. Force stable sorting by comparing indices if
-       * the x-positions are equal. */
       indices = new Array(n);
 
       for(i = n; i--; )
@@ -135,30 +129,17 @@ export function getDelaunayHelper(){
         return diff !== 0 ? diff : i - j;
       });
 
-      /* Next, find the vertices of the supertriangle (which contains all other
-       * triangles), and append them onto the end of a (copy of) the vertex
-       * array. */
       st = supertriangle(vertices);
       vertices.push(st[0], st[1], st[2]);
       
-      /* Initialize the open list (containing the supertriangle and nothing
-       * else) and the closed list (which is empty since we havn't processed
-       * any triangles yet). */
       open   = [circumcircle(vertices, n + 0, n + 1, n + 2)];
       closed = [];
       edges  = [];
 
-      /* Incrementally add each vertex to the mesh. */
       for(i = indices.length; i--; edges.length = 0) {
         c = indices[i];
 
-        /* For each open triangle, check to see if the current point is
-         * inside it's circumcircle. If it is, remove the triangle and add
-         * it's edges to an edge list. */
         for(j = open.length; j--; ) {
-          /* If this point is to the right of this triangle's circumcircle,
-           * then this triangle should never get checked again. Remove it
-           * from the open list, add it to the closed list, and skip. */
           dx = vertices[c][0] - open[j].x;
           if(dx > 0.0 && dx * dx > open[j].r) {
             closed.push(open[j]);
@@ -166,12 +147,10 @@ export function getDelaunayHelper(){
             continue;
           }
 
-          /* If we're outside the circumcircle, skip this triangle. */
           dy = vertices[c][1] - open[j].y;
           if(dx * dx + dy * dy - open[j].r > EPSILON)
             continue;
 
-          /* Remove the triangle and add it's edges to the edge list. */
           edges.push(
             open[j].i, open[j].j,
             open[j].j, open[j].k,
@@ -180,10 +159,8 @@ export function getDelaunayHelper(){
           open.splice(j, 1);
         }
 
-        /* Remove any doubled edges. */
         dedup(edges);
 
-        /* Add a new triangle for each edge. */
         for(j = edges.length; j; ) {
           b = edges[--j];
           a = edges[--j];
@@ -191,22 +168,20 @@ export function getDelaunayHelper(){
         }
       }
 
-      /* Copy any remaining open triangles to the closed list, and then
-       * remove any triangles that share a vertex with the supertriangle,
-       * building a list of triplets that represent triangles. */
       for(i = open.length; i--; )
-        closed.push(open[i]);
+        closed.push(open[i],n);
       open.length = 0;
 
       for(i = closed.length; i--; )
         if(closed[i].i < n && closed[i].j < n && closed[i].k < n)
           open.push(closed[i].i, closed[i].j, closed[i].k);
+        else{
+          closed.splice(i,1);
+        }
 
-      /* Yay, we're done! */
-      return open;
+      return {open,closed};
     },
     contains: function(tri, p) {
-      /* Bounding box test first, for quick rejections. */
       if((p[0] < tri[0][0] && p[0] < tri[1][0] && p[0] < tri[2][0]) ||
          (p[0] > tri[0][0] && p[0] > tri[1][0] && p[0] > tri[2][0]) ||
          (p[1] < tri[0][1] && p[1] < tri[1][1] && p[1] < tri[2][1]) ||
@@ -219,14 +194,12 @@ export function getDelaunayHelper(){
           d = tri[2][1] - tri[0][1],
           i = a * d - b * c;
 
-      /* Degenerate tri. */
       if(i === 0.0)
         return null;
 
       var u = (d * (p[0] - tri[0][0]) - b * (p[1] - tri[0][1])) / i,
           v = (a * (p[1] - tri[0][1]) - c * (p[0] - tri[0][0])) / i;
 
-      /* If we're outside the tri, fail. */
       if(u < 0.0 || v < 0.0 || (u + v) > 1.0)
         return null;
 
@@ -234,4 +207,36 @@ export function getDelaunayHelper(){
     }
   };
   return Delaunay;
+}
+
+/************************************
+      根据上面Delaunay三角网处理生成的closed外心数组，以及输入的容器大小
+      来生成voronoi图
+      circumcenters: {i,j,k,x,y,r}
+ ************************************/
+export function getVoronoiHelper(circumcenters,vertices,width,height){
+
+  let output = new Array(),
+      pointArray = new Array();
+      verticesArray = new Array();
+      leftTrangle = new Array();
+  
+  for(let i=0;i<circumcenters.length;i++){
+    pointArray.push([ circumcenters[i].x, circumcenters[i].y ]);
+    verticesArray.push([ circumcenters[i].i, circumcenters[i].j, circumcenters[i].k ]);
+  }
+  // 三角形的三个顶点 i j k形成邻边ij,jk,ik对应输出数组邻三角形外心的0,1,2
+  function findNeighbour(verticesArray,pointArray,index){
+    let neighour = new Array(3);
+    for(let i=0;i<verticesArray.length;i++){
+      if(i!==index){
+        if(verticesArray[i].include(verticesArray[index][0])&&verticesArray[i].include(verticesArray[index][1])){
+          neighour[0] = 
+        }
+      }
+    }
+  }
+  return{
+
+  }
 }

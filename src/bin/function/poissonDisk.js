@@ -7,7 +7,6 @@ usage: let poisson = poissonDiskHandler(nowLocation);
        let grad = await seed(randomSeed);  seed between 0-1
        let pointArray = poisson.gradExchange(grad);
 
-       author: chen_JunYang
 ************************************************************************/
 export function poissonDiskHandler(x,y){
 
