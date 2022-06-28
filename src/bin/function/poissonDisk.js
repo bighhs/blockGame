@@ -9,17 +9,18 @@ usage:
        let pointArray = poisson.gradExchange(grad);
 
 ************************************************************************/
-export function poissonDiskHandler(x,y,minSize){
+export function poissonDiskHandler(x,y,setting){
 
-    const blockSize = 150;
-
+    if(!setting.blockSize){
+        let blockSize = 150;        
+    }
+    if(!setting.minSize){
+        let minSize = 20;        
+    }
     let X = Math.floor(x / blockSize);
     let Y = Math.floor(y / blockSize);
     let perm = new Array(512);
     let mapSize = blockSize;
-    if(minSize){
-        let minSize = 20;        
-    }
 
     class grad2D{
         // usually they are square,then accept two arguement;

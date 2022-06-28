@@ -29,7 +29,7 @@ export default {
         let noise2 = noise3(16059,1537);
         let datamain = await noise2.seed(0.66523);
 
-        let disk = poissonDiskHandler(16059,1537,40);
+        let disk = poissonDiskHandler(16059,1537,{minSize:40,blockSize:150});
         let grad = await disk.seed(0.66523);
         let poissonArray = disk.gradExchange(grad);
         let delaunay = getDelaunayHelper();
@@ -39,6 +39,7 @@ export default {
         let bbox = { xl: 0, xr: 150, yt: 0, yb: 150 };
         let voronoi = new Voronoi();
         let Vresult = voronoi.compute(sites,bbox);
+
         /*eslint-disable*/
         console.log(sites);
 
