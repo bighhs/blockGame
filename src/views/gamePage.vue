@@ -4,7 +4,7 @@
         <div class="gameBar"></div>
         <div class="msgWindow"></div>
         <div class="checkMap">
-            <canvas ref="canvas" width="1024" height="1024"></canvas>
+            <canvas ref="canvas" width="200" height="200"></canvas>
         </div>
     </div>
 </template>
@@ -12,7 +12,8 @@
 import * as echarts from 'echarts'
 
 import { poissonDiskHandler } from '../bin/function/poissonDisk'
-import { getDelaunayHelper } from '../bin/function/voronoi'
+import { getDelaunayHelper } from '../bin/function/delaunay'
+import { Voronoi } from '../bin/function/voronoi'
 export default {
     name: 'gamePage',
     data(){
@@ -25,14 +26,21 @@ export default {
     },
     async mounted(){
         let noise3 = await import('../bin/function/water.js').then(({ mapWaterHelper }) => {return mapWaterHelper});
-        let noise2 = noise3(16059,1387);
+        let noise2 = noise3(16059,1537);
         let datamain = await noise2.seed(0.66523);
 
-        let disk = poissonDiskHandler(16059,1387);
+        let disk = poissonDiskHandler(16059,1537,40);
         let grad = await disk.seed(0.66523);
         let poissonArray = disk.gradExchange(grad);
         let delaunay = getDelaunayHelper();
-        let dMap = delaunay.triangulate(poissonArray.res).open
+        let dMap = delaunay.triangulate(poissonArray.arrayRes).open
+
+        let sites = poissonArray.objectRes;
+        let bbox = { xl: 0, xr: 150, yt: 0, yb: 150 };
+        let voronoi = new Voronoi();
+        let Vresult = voronoi.compute(sites,bbox);
+        /*eslint-disable*/
+        console.log(sites);
 
         for (let i = 0; i < 150; i++) {
             for (let j = 0; j < 150; j++) {
@@ -52,7 +60,7 @@ export default {
             this.Xdata.push(j);
         }
         this.drawChart();
-        this.drawMap(poissonArray.res,dMap)
+        this.drawMap(poissonArray.arrayRes,dMap,Vresult.cells)
     },
     methods: {
         drawChart(){
@@ -110,19 +118,30 @@ export default {
 
             option && myChart.setOption(option);
         },
-        drawMap(vertices,triangles){
+        drawMap(vertices,triangles,cells){
             let canvasMap = this.$refs.canvas,
                 ctx = canvasMap.getContext("2d"),
                 i;
-            for(i = triangles.length; i; ) {
+            // for(i = triangles.length; i; ) {
+            //     ctx.beginPath();
+            //     --i; ctx.moveTo(vertices[triangles[i]][0], vertices[triangles[i]][1]);
+            //     --i; ctx.lineTo(vertices[triangles[i]][0], vertices[triangles[i]][1]);
+            //     --i; ctx.lineTo(vertices[triangles[i]][0], vertices[triangles[i]][1]);
+            //     ctx.closePath();
+            //     ctx.stroke();
+            // }
+            for(i = 0; i < cells.length; i++){
                 ctx.beginPath();
-                --i; ctx.moveTo(vertices[triangles[i]][0], vertices[triangles[i]][1]);
-                --i; ctx.lineTo(vertices[triangles[i]][0], vertices[triangles[i]][1]);
-                --i; ctx.lineTo(vertices[triangles[i]][0], vertices[triangles[i]][1]);
+                let edgeArray = cells[i].halfedges;
+                for(let k = 0; k < edgeArray.length ; k++){
+                    ctx.moveTo(edgeArray[k].edge.va.x,edgeArray[k].edge.va.y);
+                    ctx.lineTo(edgeArray[k].edge.vb.x,edgeArray[k].edge.vb.y);
+                }
                 ctx.closePath();
                 ctx.stroke();
             }
-        }
+        },
+
     }
     // methods: {
     //     beginGame(){

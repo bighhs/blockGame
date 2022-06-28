@@ -3,12 +3,13 @@
        固定的种子在固定的加载区块（函数中为blockSize计算的区块位置）生成固定的泊松采样点，
        使得有规律的生成随机点
 
-usage: let poisson = poissonDiskHandler(nowLocation);
+usage:
+       let poisson = poissonDiskHandler(nowLocation);
        let grad = await seed(randomSeed);  seed between 0-1
        let pointArray = poisson.gradExchange(grad);
 
 ************************************************************************/
-export function poissonDiskHandler(x,y){
+export function poissonDiskHandler(x,y,minSize){
 
     const blockSize = 150;
 
@@ -16,7 +17,9 @@ export function poissonDiskHandler(x,y){
     let Y = Math.floor(y / blockSize);
     let perm = new Array(512);
     let mapSize = blockSize;
-    let minSize = 20;
+    if(minSize){
+        let minSize = 20;        
+    }
 
     class grad2D{
         // usually they are square,then accept two arguement;
@@ -161,19 +164,20 @@ export function poissonDiskHandler(x,y){
         let size = 150;
         let test = new Array(size*size);
         test.fill(0);
-        let res = new Array();
+        let objectRes = new Array(),arrayRes = new Array();
         for(let i=0;i<grad.gradNum;i++){
             for(let j=0;j<grad.gradNum;j++){
                 let point = grad.getPoint(j,i);
                 if(point){
-                    res.push(point);
+                    objectRes.push({x:point[0],y:point[1]});
+                    arrayRes.push(point);
                     let xI = Math.round(point[0]);
                     let yI = Math.round(point[1]);
                     test[xI + size*yI] = 1;
                 }
             }
         }
-        return {res,test};
+        return {objectRes,arrayRes,test};
     }
 
     return {
