@@ -4,7 +4,7 @@
         <div class="gameBar"></div>
         <div class="msgWindow"></div>
         <div class="checkMap">
-            <canvas ref="canvas" width="200" height="200"></canvas>
+            <canvas ref="canvas" width="700" height="700"></canvas>
         </div>
     </div>
 </template>
@@ -14,6 +14,7 @@ import * as echarts from 'echarts'
 import { poissonDiskHandler } from '../bin/function/poissonDisk'
 import { getDelaunayHelper } from '../bin/function/delaunay'
 import { Voronoi } from '../bin/function/voronoi'
+import { preLoadHelper } from '../bin/function/preLoad'
 export default {
     name: 'gamePage',
     data(){
@@ -29,7 +30,7 @@ export default {
         let noise2 = noise3(16059,1537);
         let datamain = await noise2.seed(0.66523);
 
-        let disk = poissonDiskHandler(16059,1537,{minSize:40,blockSize:150});
+        let disk = poissonDiskHandler(16059,1537,{minSize:30,blockSize:150});
         let grad = await disk.seed(0.66523);
         let poissonArray = disk.gradExchange(grad);
         let delaunay = getDelaunayHelper();
@@ -40,8 +41,12 @@ export default {
         let voronoi = new Voronoi();
         let Vresult = voronoi.compute(sites,bbox);
 
+        let pl = preLoadHelper(16059,1537);
+        let bArray = await pl.poissonInit();
+        let rv = pl.voronoiSlice(pl.getherPoint(bArray));
         /*eslint-disable*/
-        console.log(sites);
+        console.log(Vresult);
+        console.log(rv);
 
         for (let i = 0; i < 150; i++) {
             for (let j = 0; j < 150; j++) {
@@ -61,7 +66,7 @@ export default {
             this.Xdata.push(j);
         }
         this.drawChart();
-        this.drawMap(poissonArray.arrayRes,dMap,Vresult.cells)
+        this.drawMap(poissonArray.arrayRes,dMap,rv.cells)
     },
     methods: {
         drawChart(){
@@ -135,8 +140,8 @@ export default {
                 ctx.beginPath();
                 let edgeArray = cells[i].halfedges;
                 for(let k = 0; k < edgeArray.length ; k++){
-                    ctx.moveTo(edgeArray[k].edge.va.x,edgeArray[k].edge.va.y);
-                    ctx.lineTo(edgeArray[k].edge.vb.x,edgeArray[k].edge.vb.y);
+                    ctx.moveTo(edgeArray[k].edge.va.x+150,edgeArray[k].edge.va.y+150);
+                    ctx.lineTo(edgeArray[k].edge.vb.x+150,edgeArray[k].edge.vb.y+150);
                 }
                 ctx.closePath();
                 ctx.stroke();

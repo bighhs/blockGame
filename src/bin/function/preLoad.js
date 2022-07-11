@@ -11,36 +11,34 @@ export function preLoadHelper(x,y){
     let blockSize = 150;
 
     async function poissonInit(seed){
-        let grad = await disk.seed(0.66523);
+        seed = seed===undefined?0.66523:seed;
         let blockArray = new Array();
+
+        async function seedHelper(...setting){
+            let disk = poissonDiskHandler(...setting);
+            let grad = await disk.seed(seed);
+            return disk.gradExchange(grad).objectRes;
+        }
         // get around nine block
-        let disk = poissonDiskHandler(x-150,y+150,{minSize:40,blockSize:blockSize});
-        let poissonArray = {res:disk.gradExchange(grad).objectRes,locate:[-1,1]};
-        blockArray.push(poissonArray);
-        disk = poissonDiskHandler(x,y+150,{minSize:40,blockSize:blockSize});
-        poissonArray = {res:disk.gradExchange(grad).objectRes,locate:[0,1]};
-        blockArray.push(poissonArray);
-        disk = poissonDiskHandler(x+150,y+150,{minSize:40,blockSize:blockSize});
-        poissonArray = {res:disk.gradExchange(grad).objectRes,locate:[1,1]};
-        blockArray.push(poissonArray);
-        disk = poissonDiskHandler(x-150,y,{minSize:40,blockSize:blockSize});
-        poissonArray = {res:disk.gradExchange(grad).objectRes,locate:[-1,0]};
-        blockArray.push(poissonArray);
-        disk = poissonDiskHandler(x,y,{minSize:40,blockSize:blockSize});
-        poissonArray = {res:disk.gradExchange(grad).objectRes,locate:[0,0]};
-        blockArray.push(poissonArray);
-        disk = poissonDiskHandler(x+150,y,{minSize:40,blockSize:blockSize});
-        poissonArray = {res:disk.gradExchange(grad).objectRes,locate:[1,0]};
-        blockArray.push(poissonArray);
-        disk = poissonDiskHandler(x-150,y-150,{minSize:40,blockSize:blockSize});
-        poissonArray = {res:disk.gradExchange(grad).objectRes,locate:[-1,-1]};
-        blockArray.push(poissonArray);
-        disk = poissonDiskHandler(x,y-150,{minSize:40,blockSize:blockSize});
-        poissonArray = {res:disk.gradExchange(grad).objectRes,locate:[0,-1]};
-        blockArray.push(poissonArray);
-        disk = poissonDiskHandler(x+150,y-150,{minSize:40,blockSize:blockSize});
-        poissonArray = {res:disk.gradExchange(grad).objectRes,locate:[1,-1]};
-        blockArray.push(poissonArray);
+        // 未考虑退化情况，也就是刚好能被150整除，后续更新
+        let res = await seedHelper(x-150,y+150,{minSize:40,blockSize:blockSize});
+        blockArray.push({res: res,locate:[-1,1]});
+        res = await seedHelper(x,y+150,{minSize:40,blockSize:blockSize});
+        blockArray.push({res: res,locate:[0,1]});
+        res = await seedHelper(x+150,y+150,{minSize:40,blockSize:blockSize});
+        blockArray.push({res: res,locate:[1,1]});
+        res = await seedHelper(x-150,y,{minSize:40,blockSize:blockSize});
+        blockArray.push({res: res,locate:[-1,0]});
+        res = await seedHelper(x,y,{minSize:40,blockSize:blockSize});
+        blockArray.push({res: res,locate:[0,0]});
+        res = await seedHelper(x+150,y,{minSize:40,blockSize:blockSize});
+        blockArray.push({res: res,locate:[1,0]});
+        res = await seedHelper(x-150,y-150,{minSize:40,blockSize:blockSize});
+        blockArray.push({res: res,locate:[-1,-1]});
+        res = await seedHelper(x,y-150,{minSize:40,blockSize:blockSize});
+        blockArray.push({res: res,locate:[0,-1]});
+        res = await seedHelper(x+150,y-150,{minSize:40,blockSize:blockSize});
+        blockArray.push({res: res,locate:[1,-1]});
 
         return blockArray;
     }
@@ -69,8 +67,23 @@ export function preLoadHelper(x,y){
         return Vresult;
     }
 
+    function coloringCell(Vresult){
+        // this function will markdown the cell that has been colored by the real location
+        let x0 = (x % 150)*150,y0 = (y % 150)*150;
+        let cellResult = [];
+        let loadCells = Vresult.cells.forEach((cell)=>{
+            if(cell.halfedges.length!==0){
+                let xc = cell.site.x + x0;
+                let yc = cell.site.y + y0;
+                
+            }
+        })
+        
+    }
+
     return {
-        seed,
-        getherPoint
+        poissonInit,
+        getherPoint,
+        voronoiSlice
     }
 }

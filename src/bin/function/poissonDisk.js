@@ -10,13 +10,9 @@ usage:
 
 ************************************************************************/
 export function poissonDiskHandler(x,y,setting){
+    let blockSize = setting.blockSize===undefined?150:setting.blockSize;
+    let minSize = setting.minSize===undefined?20:setting.minSize;
 
-    if(!setting.blockSize){
-        let blockSize = 150;        
-    }
-    if(!setting.minSize){
-        let minSize = 20;        
-    }
     let X = Math.floor(x / blockSize);
     let Y = Math.floor(y / blockSize);
     let perm = new Array(512);
